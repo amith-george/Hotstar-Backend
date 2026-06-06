@@ -2,11 +2,16 @@ using System.Text;
 using HotstarApi.Data;
 using HotstarApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── 0. Kestrel — raise max body size to 2 GB for video uploads ───────────────
+builder.Services.Configure<KestrelServerOptions>(options =>
+    options.Limits.MaxRequestBodySize = 2_147_483_648);   // 2 GB
 
 // ── 1. Database ──────────────────────────────────────────────────────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -44,6 +49,7 @@ builder.Services.AddAuthorization();
 
 // ── 3. Application Services ───────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 // ── 4. Controllers ────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
