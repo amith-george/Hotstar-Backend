@@ -43,9 +43,9 @@ public class GenresController : ControllerBase
             : Ok(new GenreDto { Id = genre.Id, Name = genre.Name });
     }
 
-    // POST api/genres — admin only in production; open here for dev convenience
+    // POST api/genres — admin only
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(GenreDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] GenreCreateDto dto)
@@ -63,7 +63,7 @@ public class GenresController : ControllerBase
 
     // PUT api/genres/{id}
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(GenreDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -83,7 +83,7 @@ public class GenresController : ControllerBase
 
     // DELETE api/genres/{id}
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)

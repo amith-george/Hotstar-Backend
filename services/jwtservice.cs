@@ -37,6 +37,7 @@ public class JwtService : IJwtService
             new(JwtRegisteredClaimNames.Sub,   user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
+            new(ClaimTypes.Role,               user.Role),
             // Add subscription tier as a custom claim so controllers can gate content easily
             new("subscriptionId", user.SubscriptionId?.ToString() ?? "1"),
         };
