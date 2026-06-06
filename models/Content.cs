@@ -31,4 +31,7 @@ public class Content
 
     // Navigation — one-to-many Videos
     public ICollection<Video> Videos { get; set; } = new List<Video>();
+
+    // Navigation — one-to-many Reviews
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

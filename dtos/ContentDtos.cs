@@ -20,6 +20,10 @@ public class ContentDto
     public int         ReleaseYear { get; set; }
     public bool        IsPremium   { get; set; }
     public List<string> Genres     { get; set; } = new();
+
+    // Dynamically aggregated metrics
+    public double AverageRating    { get; set; }
+    public int    TotalReviewCount { get; set; }
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────
