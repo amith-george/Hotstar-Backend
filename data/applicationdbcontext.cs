@@ -29,6 +29,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<OtpToken>     OtpTokens     { get; set; }
     public DbSet<UserSession>  UserSessions  { get; set; }
 
+    // ─── Domain 6: Reviews & Ratings ───────────────────────────────────────────
+    public DbSet<Review>       Reviews       { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -220,6 +223,34 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(s => s.User)
                   .WithMany()
                   .HasForeignKey(s => s.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ══════════════════════════════════════════════════════════════════
+        // DOMAIN 6
+        // ══════════════════════════════════════════════════════════════════
+
+        // ── Review ──────────────────────────────────────────────────────────────
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            // A profile can only review a specific content title once
+            entity.HasIndex(r => new { r.ProfileId, r.ContentId }).IsUnique();
+
+            entity.Property(r => r.RatingValue).IsRequired();
+            entity.Property(r => r.ReviewText).HasMaxLength(500);
+
+            // Profile → Review cascade delete
+            entity.HasOne(r => r.Profile)
+                  .WithMany()
+                  .HasForeignKey(r => r.ProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Content → Review cascade delete
+            entity.HasOne(r => r.Content)
+                  .WithMany()
+                  .HasForeignKey(r => r.ContentId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

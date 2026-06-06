@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using HotstarApi.Data;
 using HotstarApi.Dtos.Contents;
 using HotstarApi.Models;
@@ -31,8 +32,8 @@ public class ContentsController : ControllerBase
                  .Distinct()
                  .ToList();
 
-    // ─── Private mapper ───────────────────────────────────────────────────────
-    private static ContentDto ToDto(Content c) => new()
+    // ─── Private mapper (DB Projection) ───────────────────────────────────────
+    private static Expression<Func<Content, ContentDto>> ToDtoProjection => c => new ContentDto
     {
         Id          = c.Id,
         Title       = c.Title,
@@ -42,7 +43,25 @@ public class ContentsController : ControllerBase
         ContentType = c.ContentType.ToString(),
         ReleaseYear = c.ReleaseYear,
         IsPremium   = c.IsPremium,
-        Genres      = c.Genres.Select(g => g.Name).OrderBy(n => n).ToList()
+        Genres      = c.Genres.Select(g => g.Name).OrderBy(n => n).ToList(),
+        TotalReviewCount = c.Reviews.Count,
+        AverageRating    = c.Reviews.Any() ? c.Reviews.Average(r => (double)r.RatingValue) : 0.0
+    };
+
+    // ─── Private mapper (Memory mapping for Create/Update responses) ──────────
+    private static ContentDto ToDtoMemory(Content c) => new()
+    {
+        Id          = c.Id,
+        Title       = c.Title,
+        Description = c.Description,
+        PosterUrl   = c.PosterUrl,
+        BannerUrl   = c.BannerUrl,
+        ContentType = c.ContentType.ToString(),
+        ReleaseYear = c.ReleaseYear,
+        IsPremium   = c.IsPremium,
+        Genres      = c.Genres.Select(g => g.Name).OrderBy(n => n).ToList(),
+        TotalReviewCount = 0, // Defaults for immediate response
+        AverageRating    = 0.0
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -79,13 +98,14 @@ public class ContentsController : ControllerBase
             .ThenBy(c => c.Title)
             .Skip((page - 1) * size)
             .Take(size)
+            .Select(ToDtoProjection)
             .ToListAsync();
 
         Response.Headers.Append("X-Total-Count", total.ToString());
         Response.Headers.Append("X-Page",        page.ToString());
         Response.Headers.Append("X-Page-Size",   size.ToString());
 
-        return Ok(content.Select(ToDto));
+        return Ok(content);
     }
 
     // GET api/contents/{id}
@@ -95,10 +115,12 @@ public class ContentsController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var content = await _db.Contents
-            .Include(c => c.Genres)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(ToDtoProjection)
+            .FirstOrDefaultAsync();
 
-        return content is null ? NotFound() : Ok(ToDto(content));
+        return content is null ? NotFound() : Ok(content);
     }
 
     // GET api/contents/{id}/videos
@@ -170,7 +192,7 @@ public class ContentsController : ControllerBase
         // Reload with genres for the response DTO
         await _db.Entry(content).Collection(c => c.Genres).LoadAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = content.Id }, ToDto(content));
+        return CreatedAtAction(nameof(GetById), new { id = content.Id }, ToDtoMemory(content));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -219,7 +241,7 @@ public class ContentsController : ControllerBase
         }
 
         await _db.SaveChangesAsync();
-        return Ok(ToDto(content));
+        return Ok(ToDtoMemory(content));
     }
 
     // DELETE api/contents/{id}
