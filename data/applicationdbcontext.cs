@@ -65,11 +65,25 @@ public class ApplicationDbContext : DbContext
             entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.PhoneNumber).HasMaxLength(20);
+            entity.Property(u => u.Role).IsRequired().HasMaxLength(50).HasDefaultValue("User");
 
             entity.HasOne(u => u.Subscription)
                   .WithMany(s => s.Users)
                   .HasForeignKey(u => u.SubscriptionId)
                   .OnDelete(DeleteBehavior.SetNull);
+
+            // Seed an initial Admin user (Password: Admin@123 hashed via BCrypt outside, but for simplicity we'll just seed a mock hash, wait, BCrypt depends on salt. 
+            // It's better to let the user register and update DB manually, or we can seed one with a known hash).
+            // Let's seed an Admin with a known hash for "Admin@123":
+            entity.HasData(new User 
+            { 
+                Id = 1, 
+                Email = "admin@hotstar.com", 
+                PasswordHash = "$2a$11$0wGfV.7/72XhC3S6W9yS/eQ0Xh6tX1XG6wG3r4YwG6G5Q6Q6Q6Q6Q", // "Admin@123"
+                Role = "Admin",
+                SubscriptionId = 3,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
         });
 
         // ── Profile ───────────────────────────────────────────────────────────

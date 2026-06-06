@@ -118,21 +118,20 @@ public class WatchlistController : ControllerBase
     // ─────────────────────────────────────────────────────────────────────────
     // DELETE api/watchlist
     // Removes a Content title from the profile's watchlist.
-    // Uses the same ToggleDto as Add so the frontend can use one object for both.
     // ─────────────────────────────────────────────────────────────────────────
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Remove([FromBody] WatchlistToggleDto dto)
+    public async Task<IActionResult> Remove([FromQuery] int profileId, [FromQuery] int contentId)
     {
         var userId = GetCurrentUserId();
 
-        if (!await ProfileBelongsToUserAsync(dto.ProfileId, userId))
+        if (!await ProfileBelongsToUserAsync(profileId, userId))
             return Forbid();
 
         var item = await _db.Watchlists
-            .FirstOrDefaultAsync(wl => wl.ProfileId == dto.ProfileId && wl.ContentId == dto.ContentId);
+            .FirstOrDefaultAsync(wl => wl.ProfileId == profileId && wl.ContentId == contentId);
 
         if (item is null)
             return NotFound(new { message = "This title is not in the watchlist." });

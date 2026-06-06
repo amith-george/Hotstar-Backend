@@ -20,4 +20,7 @@ public class Video
     // FK
     public int ContentId { get; set; }
     public Content Content { get; set; } = null!;
+
+    // Navigation
+    public ICollection<WatchHistory> WatchHistories { get; set; } = new List<WatchHistory>();
 }

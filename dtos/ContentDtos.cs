@@ -24,6 +24,10 @@ public class ContentDto
     // Dynamically aggregated metrics
     public double AverageRating    { get; set; }
     public int    TotalReviewCount { get; set; }
+
+    // Frontend helper fields (Contextual based on profileId)
+    public bool   IsInWatchlist    { get; set; }
+    public int?   ResumeTimestamp  { get; set; }
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────

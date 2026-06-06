@@ -12,6 +12,8 @@ public class User
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string Role { get; set; } = "User";
+
     // FK — nullable: a freshly registered user starts with the Free plan (seeded)
     public int? SubscriptionId { get; set; }
     public Subscription? Subscription { get; set; }

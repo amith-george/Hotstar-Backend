@@ -33,7 +33,7 @@ public class ContentsController : ControllerBase
                  .ToList();
 
     // ─── Private mapper (DB Projection) ───────────────────────────────────────
-    private static Expression<Func<Content, ContentDto>> ToDtoProjection => c => new ContentDto
+    private static Expression<Func<Content, ContentDto>> ToDtoProjection(int? profileId = null) => c => new ContentDto
     {
         Id          = c.Id,
         Title       = c.Title,
@@ -45,7 +45,15 @@ public class ContentsController : ControllerBase
         IsPremium   = c.IsPremium,
         Genres      = c.Genres.Select(g => g.Name).OrderBy(n => n).ToList(),
         TotalReviewCount = c.Reviews.Count,
-        AverageRating    = c.Reviews.Any() ? c.Reviews.Average(r => (double)r.RatingValue) : 0.0
+        AverageRating    = c.Reviews.Any() ? c.Reviews.Average(r => (double)r.RatingValue) : 0.0,
+        IsInWatchlist    = profileId.HasValue && c.Watchlists.Any(w => w.ProfileId == profileId.Value),
+        ResumeTimestamp  = profileId.HasValue
+            ? c.Videos.SelectMany(v => v.WatchHistories)
+                      .Where(wh => wh.ProfileId == profileId.Value)
+                      .OrderByDescending(wh => wh.LastWatchedAt)
+                      .Select(wh => (int?)wh.StoppedAtTimestamp)
+                      .FirstOrDefault()
+            : null
     };
 
     // ─── Private mapper (Memory mapping for Create/Update responses) ──────────
@@ -61,7 +69,9 @@ public class ContentsController : ControllerBase
         IsPremium   = c.IsPremium,
         Genres      = c.Genres.Select(g => g.Name).OrderBy(n => n).ToList(),
         TotalReviewCount = 0, // Defaults for immediate response
-        AverageRating    = 0.0
+        AverageRating    = 0.0,
+        IsInWatchlist    = false,
+        ResumeTimestamp  = null
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -98,7 +108,7 @@ public class ContentsController : ControllerBase
             .ThenBy(c => c.Title)
             .Skip((page - 1) * size)
             .Take(size)
-            .Select(ToDtoProjection)
+            .Select(ToDtoProjection(null))
             .ToListAsync();
 
         Response.Headers.Append("X-Total-Count", total.ToString());
@@ -112,12 +122,12 @@ public class ContentsController : ControllerBase
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ContentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int id, [FromQuery] int? profileId = null)
     {
         var content = await _db.Contents
             .AsNoTracking()
             .Where(c => c.Id == id)
-            .Select(ToDtoProjection)
+            .Select(ToDtoProjection(profileId))
             .FirstOrDefaultAsync();
 
         return content is null ? NotFound() : Ok(content);
@@ -157,7 +167,7 @@ public class ContentsController : ControllerBase
     // Uses [FromForm] because the request is multipart/form-data.
     // ─────────────────────────────────────────────────────────────────────────
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ContentDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromForm] ContentCreateDto dto)
@@ -199,7 +209,7 @@ public class ContentsController : ControllerBase
     // PUT api/contents/{id}
     // ─────────────────────────────────────────────────────────────────────────
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ContentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -246,7 +256,7 @@ public class ContentsController : ControllerBase
 
     // DELETE api/contents/{id}
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)

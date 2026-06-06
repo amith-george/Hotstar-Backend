@@ -48,7 +48,7 @@ public class VideosController : ControllerBase
     // Accepts multipart/form-data. 2 GB request limit for large video files.
     // ─────────────────────────────────────────────────────────────────────────
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(2_147_483_648)]           // 2 GB
     [RequestFormLimits(MultipartBodyLengthLimit = 2_147_483_648)]
@@ -95,7 +95,7 @@ public class VideosController : ControllerBase
     // 2 GB limit — caller may upload a replacement video file.
     // ─────────────────────────────────────────────────────────────────────────
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(2_147_483_648)]
     [RequestFormLimits(MultipartBodyLengthLimit = 2_147_483_648)]
@@ -124,7 +124,7 @@ public class VideosController : ControllerBase
 
     // DELETE api/videos/{id}
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id)

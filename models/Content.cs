@@ -34,4 +34,7 @@ public class Content
 
     // Navigation — one-to-many Reviews
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+    // Navigation — one-to-many Watchlists
+    public ICollection<Watchlist> Watchlists { get; set; } = new List<Watchlist>();
 }
