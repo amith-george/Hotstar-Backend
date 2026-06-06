@@ -51,6 +51,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IStreamGuardService, StreamGuardService>();
 
 // ── 4. Controllers ────────────────────────────────────────────────────────────
 builder.Services.AddControllers();

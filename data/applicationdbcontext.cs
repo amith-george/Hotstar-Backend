@@ -25,6 +25,11 @@ public class ApplicationDbContext : DbContext
     // ─── Domain 4: Payments ─────────────────────────────────────────────────────
     public DbSet<Transaction> Transactions { get; set; }
 
+    // ─── Domain 5: Search, User Management, & OTP Integration ──────────────────
+    public DbSet<OtpToken>     OtpTokens     { get; set; }
+    public DbSet<UserSession>  UserSessions  { get; set; }
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -190,5 +195,33 @@ public class ApplicationDbContext : DbContext
                   .HasForeignKey(t => t.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // ══════════════════════════════════════════════════════════════════
+        // DOMAIN 5
+        // ══════════════════════════════════════════════════════════════════
+
+        // ── OtpToken ────────────────────────────────────────────────────────────
+        modelBuilder.Entity<OtpToken>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+            entity.Property(o => o.Email).IsRequired().HasMaxLength(256);
+            entity.Property(o => o.OtpCode).IsRequired().HasMaxLength(6);
+            entity.Property(o => o.Purpose).IsRequired().HasMaxLength(50);
+        });
+
+        // ── UserSession ─────────────────────────────────────────────────────────
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.DeviceIdentifier).IsRequired().HasMaxLength(256);
+            entity.Property(s => s.IpAddress).HasMaxLength(50);
+
+            // Cascade delete: when user is deleted, their active sessions are removed.
+            entity.HasOne(s => s.User)
+                  .WithMany()
+                  .HasForeignKey(s => s.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
+

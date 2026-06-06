@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using HotstarApi.Data;
 using HotstarApi.Dtos.Auth;
 using HotstarApi.Models;
@@ -84,5 +85,57 @@ public class AuthController : ControllerBase
             UserId           = user.Id,
             SubscriptionName = user.Subscription?.Name ?? "Free"
         });
+    }
+
+    // POST api/auth/request-otp
+    [HttpPost("request-otp")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RequestOtp([FromBody] RequestOtpDto dto)
+    {
+        // Generate a 6-digit cryptographically secure OTP
+        var otpCode = RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
+
+        var token = new OtpToken
+        {
+            Email     = dto.Email.ToLower(),
+            OtpCode   = otpCode,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+            IsUsed    = false,
+            Purpose   = dto.Purpose
+        };
+
+        _db.OtpTokens.Add(token);
+        await _db.SaveChangesAsync();
+
+        // Simulate sending SMS/Email
+        Console.WriteLine($"\n[OTP SIMULATION] Purpose: {dto.Purpose} | Email: {dto.Email} | Code: {otpCode}\n");
+
+        return Ok(new { message = "OTP generated and sent successfully." });
+    }
+
+    // POST api/auth/verify-otp
+    [HttpPost("verify-otp")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
+    {
+        var email = dto.Email.ToLower();
+
+        var token = await _db.OtpTokens
+            .Where(t => t.Email == email && t.Purpose == dto.Purpose && !t.IsUsed)
+            .OrderByDescending(t => t.ExpiresAt)
+            .FirstOrDefaultAsync();
+
+        if (token is null || token.OtpCode != dto.OtpCode)
+            return BadRequest(new { message = "Invalid OTP." });
+
+        if (token.ExpiresAt < DateTime.UtcNow)
+            return BadRequest(new { message = "OTP has expired." });
+
+        token.IsUsed = true;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "OTP verified successfully. You may proceed." });
     }
 }
