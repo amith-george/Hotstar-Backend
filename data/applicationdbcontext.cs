@@ -8,25 +8,29 @@ public class ApplicationDbContext : DbContext
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
 
-    // ─── Domain 1: Identity & Subscriptions ────────────────────────────────
+    // ─── Domain 1: Identity & Subscriptions ────────────────────────────────────
     public DbSet<User>         Users         { get; set; }
     public DbSet<Subscription> Subscriptions { get; set; }
     public DbSet<Profile>      Profiles      { get; set; }
 
-    // ─── Domain 2: Core Content & Catalog (DbSets declared now; configured next iteration) ──
-    // public DbSet<Content>      Contents      { get; set; }
-    // public DbSet<Genre>        Genres        { get; set; }
-    // public DbSet<Video>        Videos        { get; set; }
+    // ─── Domain 2: Core Content & Catalog ──────────────────────────────────────
+    public DbSet<Content> Contents { get; set; }
+    public DbSet<Genre>   Genres   { get; set; }
+    public DbSet<Video>   Videos   { get; set; }
 
-    // ─── Domain 3: User Engagement ─────────────────────────────────────────
-    // public DbSet<WatchHistory> WatchHistories { get; set; }
-    // public DbSet<Watchlist>    Watchlists     { get; set; }
+    // ─── Domain 3: User Engagement ─────────────────────────────────────────────
+    public DbSet<WatchHistory> WatchHistories { get; set; }
+    public DbSet<Watchlist>    Watchlists     { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // ── Subscription ──────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════════
+        // DOMAIN 1
+        // ════════════════════════════════════════════════════════════════════
+
+        // ── Subscription ──────────────────────────────────────────────────────
         modelBuilder.Entity<Subscription>(entity =>
         {
             entity.HasKey(s => s.Id);
@@ -34,15 +38,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(s => s.MaxResolution).IsRequired().HasMaxLength(10);
             entity.Property(s => s.MonthlyPrice).HasColumnType("decimal(10,2)");
 
-            // Seed the three subscription tiers so new users can be assigned Free immediately.
+            // Seed the three subscription tiers
             entity.HasData(
-                new Subscription { Id = 1, Name = "Free",    MonthlyPrice = 0m,    MaxResolution = "480p",  HasAds = true  },
-                new Subscription { Id = 2, Name = "Basic",   MonthlyPrice = 99m,   MaxResolution = "720p",  HasAds = true  },
-                new Subscription { Id = 3, Name = "Premium", MonthlyPrice = 299m,  MaxResolution = "1080p", HasAds = false }
+                new Subscription { Id = 1, Name = "Free",    MonthlyPrice = 0m,   MaxResolution = "480p",  HasAds = true  },
+                new Subscription { Id = 2, Name = "Basic",   MonthlyPrice = 99m,  MaxResolution = "720p",  HasAds = true  },
+                new Subscription { Id = 3, Name = "Premium", MonthlyPrice = 299m, MaxResolution = "1080p", HasAds = false }
             );
         });
 
-        // ── User ──────────────────────────────────────────────────────────
+        // ── User ──────────────────────────────────────────────────────────────
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);
@@ -51,31 +55,112 @@ public class ApplicationDbContext : DbContext
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.PhoneNumber).HasMaxLength(20);
 
-            // User → Subscription (many-to-one, nullable FK)
             entity.HasOne(u => u.Subscription)
                   .WithMany(s => s.Users)
                   .HasForeignKey(u => u.SubscriptionId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ── Profile ───────────────────────────────────────────────────────
+        // ── Profile ───────────────────────────────────────────────────────────
         modelBuilder.Entity<Profile>(entity =>
         {
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Name).IsRequired().HasMaxLength(100);
             entity.Property(p => p.AvatarUrl).HasMaxLength(500);
 
-            // Profile → User (many-to-one, cascade delete)
             entity.HasOne(p => p.User)
                   .WithMany(u => u.Profiles)
                   .HasForeignKey(p => p.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ── Domain 2 — Genre ↔ Content many-to-many (configured in next iteration) ──
-        // modelBuilder.Entity<Content>()
-        //     .HasMany(c => c.Genres)
-        //     .WithMany(g => g.Contents)
-        //     .UsingEntity(j => j.ToTable("ContentGenres"));
+        // ════════════════════════════════════════════════════════════════════
+        // DOMAIN 2
+        // ════════════════════════════════════════════════════════════════════
+
+        // ── Content ───────────────────────────────────────────────────────────
+        modelBuilder.Entity<Content>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Title).IsRequired().HasMaxLength(300);
+            entity.Property(c => c.Description).HasMaxLength(2000);
+            entity.Property(c => c.PosterUrl).HasMaxLength(500);
+            entity.Property(c => c.BannerUrl).HasMaxLength(500);
+            entity.Property(c => c.ContentType)
+                  .HasConversion<string>()    // stored as "Movie" / "TVShow"
+                  .HasMaxLength(10);
+        });
+
+        // ── Genre ─────────────────────────────────────────────────────────────
+        modelBuilder.Entity<Genre>(entity =>
+        {
+            entity.HasKey(g => g.Id);
+            entity.Property(g => g.Name).IsRequired().HasMaxLength(100);
+            entity.HasIndex(g => g.Name).IsUnique();
+        });
+
+        // ── Content ↔ Genre — explicit many-to-many join table ────────────────
+        modelBuilder.Entity<Content>()
+            .HasMany(c => c.Genres)
+            .WithMany(g => g.Contents)
+            .UsingEntity(j => j.ToTable("ContentGenres"));
+
+        // ── Video ─────────────────────────────────────────────────────────────
+        modelBuilder.Entity<Video>(entity =>
+        {
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Title).IsRequired().HasMaxLength(300);
+            entity.Property(v => v.VideoUrl).IsRequired().HasMaxLength(500);
+
+            // Cascade delete: removing a Content title removes all its episodes
+            entity.HasOne(v => v.Content)
+                  .WithMany(c => c.Videos)
+                  .HasForeignKey(v => v.ContentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ════════════════════════════════════════════════════════════════════
+        // DOMAIN 3
+        // ════════════════════════════════════════════════════════════════════
+
+        // ── WatchHistory ──────────────────────────────────────────────────────
+        modelBuilder.Entity<WatchHistory>(entity =>
+        {
+            entity.HasKey(wh => wh.Id);
+
+            // Profile → WatchHistory: cascade delete (profile gone → history gone)
+            entity.HasOne(wh => wh.Profile)
+                  .WithMany()
+                  .HasForeignKey(wh => wh.ProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Video → WatchHistory: restrict delete so history is preserved even if
+            // a video is removed from the catalog (soft business rule)
+            entity.HasOne(wh => wh.Video)
+                  .WithMany()
+                  .HasForeignKey(wh => wh.VideoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── Watchlist ─────────────────────────────────────────────────────────
+        modelBuilder.Entity<Watchlist>(entity =>
+        {
+            entity.HasKey(wl => wl.Id);
+
+            // Composite unique index: one user cannot save the same title twice
+            entity.HasIndex(wl => new { wl.ProfileId, wl.ContentId }).IsUnique();
+
+            // Profile → Watchlist: cascade delete
+            entity.HasOne(wl => wl.Profile)
+                  .WithMany()
+                  .HasForeignKey(wl => wl.ProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Content → Watchlist: cascade delete (title removed → saved entries removed)
+            entity.HasOne(wl => wl.Content)
+                  .WithMany()
+                  .HasForeignKey(wl => wl.ContentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
