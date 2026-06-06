@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "Z+xrWhTnJgg3f/qe4nMaadKRCbCw6VIajcVLh1h/9wWtikYLl4isyfRz12B9AihvZedV5Ti52JhYSdujJjyRAg==",
+  "dgSpecHash": "mwgkg6kyJdX6PDrhAzdNbbdrimlucVRJwgFZ/rFkX4+VYwOt38XA5JvolnNoZB6RNYJhN9CF1CTbBNgSxUsTQA==",
   "success": true,
   "projectFilePath": "D:\\Hotstar\\HotstarApi\\HotstarApi.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Amith.George\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\Amith.George\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\Amith.George\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.8\\microsoft.aspnetcore.authentication.jwtbearer.8.0.8.nupkg.sha512",
     "C:\\Users\\Amith.George\\.nuget\\packages\\microsoft.aspnetcore.openapi\\8.0.4\\microsoft.aspnetcore.openapi.8.0.4.nupkg.sha512",
