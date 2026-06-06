@@ -14,11 +14,13 @@ public class AuthController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly IJwtService          _jwt;
+    private readonly IEmailService        _emailService;
 
-    public AuthController(ApplicationDbContext db, IJwtService jwt)
+    public AuthController(ApplicationDbContext db, IJwtService jwt, IEmailService emailService)
     {
         _db  = db;
         _jwt = jwt;
+        _emailService = emailService;
     }
 
     // POST api/auth/register
@@ -108,8 +110,8 @@ public class AuthController : ControllerBase
         _db.OtpTokens.Add(token);
         await _db.SaveChangesAsync();
 
-        // Simulate sending SMS/Email
-        Console.WriteLine($"\n[OTP SIMULATION] Purpose: {dto.Purpose} | Email: {dto.Email} | Code: {otpCode}\n");
+        // Send actual OTP email using MailKit
+        await _emailService.SendOtpEmailAsync(dto.Email.ToLower(), otpCode, dto.Purpose);
 
         return Ok(new { message = "OTP generated and sent successfully." });
     }
