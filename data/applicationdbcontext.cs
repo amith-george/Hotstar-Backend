@@ -22,6 +22,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<WatchHistory> WatchHistories { get; set; }
     public DbSet<Watchlist>    Watchlists     { get; set; }
 
+    // ─── Domain 4: Payments ─────────────────────────────────────────────────────
+    public DbSet<Transaction> Transactions { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -161,6 +164,31 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(wl => wl.ContentId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ══════════════════════════════════════════════════════════════════
+        // DOMAIN 4
+        // ══════════════════════════════════════════════════════════════════
+
+        // ── Transaction ─────────────────────────────────────────────────────────
+        modelBuilder.Entity<Transaction>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+
+            // RazorpayOrderId must be globally unique (one order = one transaction)
+            entity.HasIndex(t => t.RazorpayOrderId).IsUnique();
+
+            entity.Property(t => t.RazorpayOrderId).IsRequired().HasMaxLength(100);
+            entity.Property(t => t.RazorpayPaymentId).HasMaxLength(100);
+            entity.Property(t => t.RazorpaySignature).HasMaxLength(512);
+            entity.Property(t => t.Currency).IsRequired().HasMaxLength(3);
+            entity.Property(t => t.Status).IsRequired().HasMaxLength(20);
+
+            // User → Transaction: Restrict delete so financial records are NEVER orphaned
+            entity.HasOne(t => t.User)
+                  .WithMany()
+                  .HasForeignKey(t => t.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
