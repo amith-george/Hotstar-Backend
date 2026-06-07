@@ -3,7 +3,8 @@ namespace HotstarApi.Models;
 public enum ContentType
 {
     Movie,
-    TVShow
+    TVShow,
+    Sports
 }
 
 public class Content
