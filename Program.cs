@@ -108,6 +108,10 @@ builder.Services.AddCors(options =>
 // ═════════════════════════════════════════════════════════════════════════════
 var app = builder.Build();
 
+// ── CORS must come before static files so uploaded assets (images/videos) ─────
+// ── receive Access-Control-Allow-Origin headers when served cross-origin ───────
+app.UseCors("AllowAll");
+
 // ── Serve files from wwwroot (poster/banner images, uploaded videos) ──────────
 app.UseStaticFiles();
 
@@ -123,7 +127,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -138,6 +141,9 @@ using (var scope = app.Services.CreateScope())
     {
         db.Database.Migrate();
     }
+    
+    // Seed our data (Users, TMDB Posters, YouTube Trailers)
+    DatabaseSeeder.Seed(db);
 }
 
 app.Run();

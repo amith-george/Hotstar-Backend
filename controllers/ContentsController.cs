@@ -82,6 +82,7 @@ public class ContentsController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ContentDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
+        [FromQuery] string?  search  = null,
         [FromQuery] string?  type    = null,
         [FromQuery] bool?    premium = null,
         [FromQuery] int?     genreId = null,
@@ -101,6 +102,9 @@ public class ContentsController : ControllerBase
 
         if (genreId.HasValue)
             query = query.Where(c => c.Genres.Any(g => g.Id == genreId.Value));
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(c => c.Title.ToLower().Contains(search.ToLower()));
 
         var total   = await query.CountAsync();
         var content = await query

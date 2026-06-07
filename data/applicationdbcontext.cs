@@ -159,12 +159,11 @@ public class ApplicationDbContext : DbContext
                   .HasForeignKey(wh => wh.ProfileId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Video → WatchHistory: restrict delete so history is preserved even if
-            // a video is removed from the catalog (soft business rule)
+            // Video → WatchHistory: cascade delete so deleting a video cleans up its history
             entity.HasOne(wh => wh.Video)
-                  .WithMany()
+                  .WithMany(v => v.WatchHistories)
                   .HasForeignKey(wh => wh.VideoId)
-                  .OnDelete(DeleteBehavior.Restrict);
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ── Watchlist ─────────────────────────────────────────────────────────
@@ -183,7 +182,7 @@ public class ApplicationDbContext : DbContext
 
             // Content → Watchlist: cascade delete (title removed → saved entries removed)
             entity.HasOne(wl => wl.Content)
-                  .WithMany()
+                  .WithMany(c => c.Watchlists)
                   .HasForeignKey(wl => wl.ContentId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
@@ -263,7 +262,7 @@ public class ApplicationDbContext : DbContext
 
             // Content → Review cascade delete
             entity.HasOne(r => r.Content)
-                  .WithMany()
+                  .WithMany(c => c.Reviews)
                   .HasForeignKey(r => r.ContentId)
                   .OnDelete(DeleteBehavior.Cascade);
         });

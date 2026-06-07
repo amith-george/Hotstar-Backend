@@ -41,7 +41,7 @@ public class EmailService : IEmailService
         }
 
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(fromName, fromEmail));
+        message.From.Add(new MailboxAddress(fromName, fromEmail ?? "noreply@hotstar.com"));
         message.To.Add(new MailboxAddress(toEmail, toEmail));
         message.Subject = $"Your OTP Code for {GetFriendlyPurposeName(purpose)}";
 
@@ -57,7 +57,7 @@ public class EmailService : IEmailService
         try
         {
             await client.ConnectAsync(host, port, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(user, pass);
+            await client.AuthenticateAsync(user, pass ?? string.Empty);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
             _logger.LogInformation($"OTP email sent successfully to {toEmail}");
