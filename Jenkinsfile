@@ -28,7 +28,7 @@ pipeline {
  
         stage('Create Network') {
             steps {
-                bat "docker network create %NETWORK% 2>nul"
+                bat "docker network create %NETWORK% 2>nul || exit 0"
             }
         }
  
