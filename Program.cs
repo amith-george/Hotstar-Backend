@@ -22,8 +22,14 @@ var connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+// Hardcode the server version to avoid AutoDetect trying to connect at startup
+var serverVersion = new MySqlServerVersion(new Version(8, 0, 33)); // Adjust if you're using a different MySQL version
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(connectionString, serverVersion, mySqlOptions => 
+        mySqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 10,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null)));
 
 // ── 2. JWT Authentication ─────────────────────────────────────────────────────
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -137,9 +143,24 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    if (db.Database.IsRelational())
+    var maxRetries = 10;
+    for (int retry = 0; retry < maxRetries; retry++)
     {
-        db.Database.Migrate();
+        try
+        {
+            if (db.Database.IsRelational())
+            {
+                db.Database.Migrate();
+            }
+            break; // Success!
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DB Migration] Attempt {retry + 1} of {maxRetries} failed. Retrying in 3 seconds...");
+            Console.WriteLine($"Error: {ex.Message}");
+            if (retry == maxRetries - 1) throw;
+            System.Threading.Thread.Sleep(3000);
+        }
     }
     
     // Seed our data (Users, TMDB Posters, YouTube Trailers)
