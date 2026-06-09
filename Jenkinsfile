@@ -71,10 +71,21 @@ pipeline {
                 docker rm -f %API_CONT% 2>nul
  
                 docker run -d --name %API_CONT% --network %NETWORK% ^
-                    --env-file .env ^
                     -e ASPNETCORE_ENVIRONMENT=Development ^
                     -e ASPNETCORE_URLS=http://+:5204 ^
                     -e DefaultConnection="Server=%MYSQL_CONT%;Port=3306;Database=%MYSQL_DB%;User=appuser;Password=%MYSQL_PWD%;" ^
+                    -e JwtSettings__Issuer=HotstarApi ^
+                    -e JwtSettings__Audience=HotstarClients ^
+                    -e JwtSettings__SecretKey=YourSuperSecretKeyThatIsAtLeast32CharactersLong! ^
+                    -e JwtSettings__ExpiryDays=7 ^
+                    -e RazorpaySettings__KeyId=rzp_test_SyQTOr8qzQ6RV5 ^
+                    -e RazorpaySettings__KeySecret=ZbxgvQCeBzS3qx1O14dTxNDs ^
+                    -e SmtpSettings__Host=smtp.example.com ^
+                    -e SmtpSettings__Port=587 ^
+                    -e SmtpSettings__User=amithgeorge130@gmail.com ^
+                    -e SmtpSettings__Pass=wxywhjefnfblofzq ^
+                    -e SmtpSettings__FromEmail=amithgeorge130@gmail.com ^
+                    -e SmtpSettings__FromName="Hotstar Clone" ^
                     -p 5204:5204 ^
                     -v api-media:/app/wwwroot/uploads ^
                     %IMAGE%
