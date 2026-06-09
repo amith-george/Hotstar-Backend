@@ -18,8 +18,8 @@ WORKDIR /app
 
 COPY --from=build /app/publish ./
 
-EXPOSE 8080
+EXPOSE 5204
 
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:5204
 
 ENTRYPOINT ["dotnet", "HotstarApi.dll"]
